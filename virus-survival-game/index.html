@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦠 Virus Survival Game</title>
+    <link rel="stylesheet" href="style.css"> <!-- Link to CSS file -->
+</head>
+<body>
+    <h1><b>🕹️ Virus Survival Game</b></h1>
+
+    <!-- Game Info Panel -->
+    <b>
+    <div id="info">
+        <p>Turn: <span id="turn">0</span></p>
+        <p>Shield Turns: <span id="shield">0</span></p>
+        <p>Double Move: <span id="doubleMove">OFF</span></p>
+        <p>Score: <span id="score">0</span></p>
+        <p>Timer: <span id="timer">0</span> seconds</p>
+        <p>Controls: W/A/S/D or Arrow Keys</p>
+        <label>
+            <input type="checkbox" id="hintCheckbox"> Show Hint Path
+        </label>
+    </div>
+    </b>
+
+    <!-- Game Board -->
+    <div id="board"></div>
+
+    <!-- Inline Message Panel -->
+
+    <div id="message"></div>
+
+    <!-- Game Over Panel (hidden initially) -->
+    <div id="gameOverPanel" class="hidden">
+        <div id="gameOverBox">
+            <h2 id="gameOverEmoji"></h2>
+            <p id="gameOverText"></p>
+            <button id="restartBtn">🔄 Restart</button>
+            <button id="exitBtn">❌ Exit</button>
+        </div>
+    </div>
+
+    <!-- JS Script -->
+    <script src="script.js"></script>
+</body>
+</html>
+
