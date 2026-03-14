@@ -1,0 +1,118 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f0f0f0;
+}
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(30, 30px);
+    grid-template-rows: repeat(20, 30px);
+    gap: 2px;
+    justify-content: center;
+    margin: 20px auto;
+}
+
+.cell {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ccc;
+    display: flex; 
+    justify-content: center;
+    align-items: center;
+    font-weight: bold; 
+    font-size: 18px;
+    transition: background-color 0.3s;
+}
+
+/* Colors */
+.empty { background-color: #ffffff; }
+.player { background-color: #067aef; color: white; }
+.wall { background-color: #808080; color: white; }
+.bomb { background-color: #ff0000; color: white; }
+.trap { background-color: #fff200; color: black; }
+.vtrap { background-color: #800080; color: white; }
+.exit { background-color: #00cc00; color: white; }
+.shield { background-color: #1abc9c; color: white; }
+.double { background-color: #f58402; color: white; }
+.energy { background-color: #c5ba21; color: black; }
+
+/* Hint Path */
+.hint {
+    background-color: #87cefa !important;
+    transition: background-color 0.3s;
+}
+
+/* Game Over Popup */
+#gameOverPanel {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+#gameOverPanel.hidden {
+    display: none;
+}
+
+#gameOverBox {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    width: 320px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    animation: popIn 0.5s ease;
+}
+
+#gameOverBox h2 {
+    font-size: 48px;
+    margin: 0;
+}
+
+#gameOverBox p {
+    font-size: 18px;
+    margin: 10px 0 20px;
+}
+
+#restartBtn, #exitBtn {
+    margin: 8px;
+    padding: 12px 24px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+/* Buttons Styling */
+#restartBtn {
+    background: linear-gradient(135deg, #28a745, #4cd964);
+    color: white;
+}
+
+#restartBtn:hover {
+    box-shadow: 0 0 10px #28a745;
+}
+
+#exitBtn {
+    background: linear-gradient(135deg, #dc3545, #ff4d6d);
+    color: white;
+}
+
+#exitBtn:hover {
+    box-shadow: 0 0 10px #dc3545;
+}
+
+/* Animations */
+@keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Win & Lose Effects */
+.winBox { background: linear-gradient(135deg, #d4edda, #c3e6cb); }
+.loseBox { background: linear-gradient(135deg, #f8d7da, #f5c6cb); }
