@@ -1,8 +1,266 @@
+/* =====================================================
+   GENERAL PAGE STYLING
+   ===================================================== */
+
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    background-color: #f0f0f0;
+    font-family: Arial, sans-serif; /* Sets main font for the entire webpage */
+    text-align: center; /* Centers all text horizontally */
+    background-color: #f0f0f0; /* Light grey background for better contrast */
 }
+
+#gameInfoCard {
+    background-color: #f5f5f5;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px auto;
+    max-width: 500px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+#gameInfoCard h3, #gameInfoCard h4 {
+    margin-top: 0;
+}
+
+#gameInfoCard ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+#gameInfoCard ul li {
+    margin: 8px 0;
+    font-size: 16px;
+}
+
+.legendGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 16px;
+}
+
+/* =====================================================
+   GAME BOARD GRID
+   ===================================================== */
+
+#board {
+    display: grid; /* Enables CSS grid layout for the game board */
+    grid-template-columns: repeat(30, 30px); /* Creates 30 columns each 30px wide */
+    grid-template-rows: repeat(20, 30px); /* Creates 20 rows each 30px tall */
+    gap: 2px; /* Adds spacing between grid cells */
+    justify-content: center; /* Centers the board horizontally */
+    margin: 20px auto; /* Adds vertical spacing and centers board */
+}
+
+/* =====================================================
+   INDIVIDUAL GRID CELL
+   ===================================================== */
+
+.cell {
+    width: 30px; /* Fixed width of each grid cell */
+    height: 30px; /* Fixed height of each grid cell */
+    border: 1px solid #ccc; /* Light border around cells for visibility */
+    display: flex; /* Enables flexbox layout */
+    justify-content: center; /* Centers emoji horizontally */
+    align-items: center; /* Centers emoji vertically */
+    font-weight: bold; /* Makes emoji/text bold */
+    font-size: 18px; /* Sets emoji size */
+    transition: background-color 0.3s; /* Smooth color transition when state changes */
+}
+
+/* =====================================================
+   CELL TYPES (GAME OBJECT COLORS)
+   ===================================================== */
+
+.empty  { background-color: #ffffff; } /* Empty tile where player can move */
+
+.player { 
+    background-color: #067aef; /* Blue background for player */
+    color: white; /* White emoji color for contrast */
+}
+
+.wall { 
+    background-color: #808080; /* Grey wall obstacle */
+    color: white; 
+}
+
+.bomb { 
+    background-color: #ff0000; /* Red background indicating danger */
+    color: white; 
+}
+
+.trap { 
+    background-color: #fff200; /* Yellow trap tile */
+    color: black; 
+}
+
+.vtrap { 
+    background-color: #800080; /* Purple virus trap */
+    color: white; 
+}
+
+.exit { 
+    background-color: #00cc00; /* Green exit tile */
+    color: white; 
+}
+
+.shield { 
+    background-color: #1abc9c; /* Teal color for shield power-up */
+    color: white; 
+}
+
+.double { 
+    background-color: #f58402; /* Orange color for double move power-up */
+    color: white; 
+}
+
+.energy { 
+    background-color: #c5ba21; /* Gold color for energy bonus */
+    color: black; 
+}
+
+/* =====================================================
+   BFS HINT PATH HIGHLIGHT
+   ===================================================== */
+
+.hint {
+    background-color: #87cefa !important; /* Light blue highlight for BFS hint path */
+    transition: background-color 0.3s; /* Smooth animation for path highlighting */
+}
+
+/* =====================================================
+   GAME OVER POPUP OVERLAY
+   ===================================================== */
+
+#gameOverPanel {
+    position: fixed; /* Keeps overlay fixed relative to screen */
+    top: 0;
+    left: 0;
+    width: 100%; /* Covers entire screen width */
+    height: 100%; /* Covers entire screen height */
+    background: rgba(0,0,0,0.6); /* Dark transparent overlay background */
+    display: flex; /* Uses flexbox to center popup */
+    justify-content: center; /* Centers horizontally */
+    align-items: center; /* Centers vertically */
+    z-index: 10; /* Ensures popup appears above game elements */
+}
+
+#gameOverPanel.hidden {
+    display: none; /* Hides overlay when game is not over */
+}
+
+/* =====================================================
+   GAME OVER BOX
+   ===================================================== */
+
+#gameOverBox {
+    background: white; /* White popup background */
+    padding: 25px; /* Internal spacing */
+    border-radius: 12px; /* Rounded corners */
+    width: 320px; /* Fixed width for popup */
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3); /* Shadow effect for depth */
+    animation: popIn 0.5s ease; /* Plays popup animation when shown */
+}
+
+#gameOverBox h2 {
+    font-size: 48px; /* Large emoji size */
+    margin: 0; /* Removes default margin */
+}
+
+#gameOverBox p {
+    font-size: 18px; /* Text size for message */
+    margin: 10px 0 20px; /* Vertical spacing around message */
+}
+
+/* =====================================================
+   GAME OVER BUTTONS
+   ===================================================== */
+
+#restartBtn, #exitBtn {
+    margin: 8px; /* Space between buttons */
+    padding: 12px 24px; /* Button size */
+    font-size: 16px; /* Button text size */
+    border: none; /* Removes default border */
+    border-radius: 6px; /* Rounded button edges */
+    cursor: pointer; /* Shows pointer on hover */
+    transition: 0.3s; /* Smooth hover transition */
+}
+
+/* Restart Button */
+
+#restartBtn {
+    background: linear-gradient(135deg, #28a745, #4cd964); /* Green gradient background */
+    color: white; /* White text color */
+}
+
+#restartBtn:hover {
+    box-shadow: 0 0 10px #28a745; /* Adds glow effect on hover */
+}
+
+/* Exit Button */
+
+#exitBtn {
+    background: linear-gradient(135deg, #dc3545, #ff4d6d); /* Red gradient background */
+    color: white; /* White text color */
+}
+
+#exitBtn:hover {
+    box-shadow: 0 0 10px #dc3545; /* Red glow effect on hover */
+}
+
+/* =====================================================
+   POPUP ANIMATION
+   ===================================================== */
+
+@keyframes popIn {
+    from {
+        transform: scale(0.5); /* Starts smaller */
+        opacity: 0; /* Initially invisible */
+    }
+    to {
+        transform: scale(1); /* Expands to normal size */
+        opacity: 1; /* Fully visible */
+    }
+}
+
+/* =====================================================
+   WIN & LOSE COLOR THEMES
+   ===================================================== */
+
+.winBox {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb); /* Green theme for win screen */
+}
+
+.loseBox {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb); /* Red theme for lose screen */
+}
+
+/* =====================================================
+   MOBILE CONTROL BUTTONS
+   ===================================================== */
+
+#mobileControls {
+    margin-top: 20px; /* Adds spacing above mobile controls */
+}
+
+#mobileControls button {
+    font-size: 24px; /* Large arrow icons */
+    padding: 14px 18px; /* Button size */
+    margin: 5px; /* Space between buttons */
+    border: none; /* Removes default button border */
+    border-radius: 10px; /* Rounded buttons */
+    background: #333; /* Dark background */
+    color: white; /* White arrow icons */
+    cursor: pointer; /* Pointer cursor on hover */
+}
+
+#mobileControls button:hover {
+    background: #555; /* Slightly lighter color when hovered */
+}
+
+/* =====================================================
+   RESPONSIVE GAME BOARD
+   ===================================================== */
 
 #board {
     display: grid;
@@ -13,106 +271,108 @@ body {
     margin: 20px auto;
 }
 
+/* =====================================================
+   RESPONSIVE GRID CELL
+   ===================================================== */
+
 .cell {
     width: 30px;
     height: 30px;
-    border: 1px solid #ccc;
-    display: flex; 
-    justify-content: center;
-    align-items: center;
-    font-weight: bold; 
-    font-size: 18px;
-    transition: background-color 0.3s;
 }
 
-/* Colors */
-.empty { background-color: #ffffff; }
-.player { background-color: #067aef; color: white; }
-.wall { background-color: #808080; color: white; }
-.bomb { background-color: #ff0000; color: white; }
-.trap { background-color: #fff200; color: black; }
-.vtrap { background-color: #800080; color: white; }
-.exit { background-color: #00cc00; color: white; }
-.shield { background-color: #1abc9c; color: white; }
-.double { background-color: #f58402; color: white; }
-.energy { background-color: #c5ba21; color: black; }
+/* =====================================================
+   MOBILE RESPONSIVE ADJUSTMENT
+   ===================================================== */
 
-/* Hint Path */
-.hint {
-    background-color: #87cefa !important;
-    transition: background-color 0.3s;
+@media (max-width: 600px){
+
+    #mobileControls{
+        position: fixed; /* Fix controls at bottom */
+        bottom: 20px; /* Distance from bottom */
+        left: 0;
+        right: 0;
+    }
+
 }
 
-/* Game Over Popup */
-#gameOverPanel {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10;
+/* =====================================================
+   START SCREEN
+   ===================================================== */
+
+#startScreen{
+    position:fixed; /* Covers full screen before game starts */
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+
+    background:linear-gradient(135deg,#2c3e50,#4ca1af); /* Gradient background */
+
+    color:white;
+
+    display:flex; /* Center content using flexbox */
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+
+    z-index:20; /* Keeps start screen above game */
 }
 
-#gameOverPanel.hidden {
-    display: none;
+#startScreen h1{
+    font-size:40px; /* Large title */
+    margin-bottom:10px; /* Space below title */
 }
 
-#gameOverBox {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    width: 320px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-    animation: popIn 0.5s ease;
+#startBtn{
+    padding:14px 30px; /* Button padding */
+    font-size:20px; /* Button text size */
+    border:none; /* Remove border */
+    border-radius:8px; /* Rounded corners */
+    background:#00cc66; /* Green background */
+    color:white; /* White text */
+    cursor:pointer; /* Pointer on hover */
+    transition:0.3s; /* Smooth hover animation */
 }
 
-#gameOverBox h2 {
-    font-size: 48px;
-    margin: 0;
+#startBtn:hover{
+    transform:scale(1.1); /* Slight zoom effect */
+    box-shadow:0 0 10px #00cc66; /* Glow effect */
 }
 
-#gameOverBox p {
-    font-size: 18px;
-    margin: 10px 0 20px;
+/* =====================================================
+   GAME LEGEND PANEL
+   ===================================================== */
+
+#legend{
+    width:70%; /* Legend container width */
+    margin:10px auto; /* Center legend */
+    background:white; /* White background */
+    padding:10px; /* Internal spacing */
+    border-radius:10px; /* Rounded edges */
+    box-shadow:0 3px 10px rgba(0,0,0,0.2); /* Soft shadow */
 }
 
-#restartBtn, #exitBtn {
-    margin: 8px;
-    padding: 12px 24px;
-    font-size: 16px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: 0.3s;
+.legendGrid{
+    display:grid; /* Grid layout for legend items */
+    grid-template-columns:repeat(4,1fr); /* 4 columns layout */
+    gap:8px; /* Spacing between legend items */
+    text-align:left; /* Align text left */
 }
 
-/* Buttons Styling */
-#restartBtn {
-    background: linear-gradient(135deg, #28a745, #4cd964);
-    color: white;
+/* =====================================================
+   ENEMY TILE STYLE
+   ===================================================== */
+
+.enemy{
+    background:#111; /* Dark background for enemy */
+    color:white; /* White emoji/text */
 }
 
-#restartBtn:hover {
-    box-shadow: 0 0 10px #28a745;
-}
+/* =====================================================
+   FOG OF WAR EFFECT
+   ===================================================== */
 
-#exitBtn {
-    background: linear-gradient(135deg, #dc3545, #ff4d6d);
-    color: white;
+.fog{
+    background:#000 !important; /* Black tile to hide unexplored area */
+    color:transparent; /* Hide emoji/text in fog cells */
 }
-
-#exitBtn:hover {
-    box-shadow: 0 0 10px #dc3545;
-}
-
-/* Animations */
-@keyframes popIn {
-    from { transform: scale(0.5); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
-/* Win & Lose Effects */
-.winBox { background: linear-gradient(135deg, #d4edda, #c3e6cb); }
-.loseBox { background: linear-gradient(135deg, #f8d7da, #f5c6cb); }

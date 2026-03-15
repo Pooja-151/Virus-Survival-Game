@@ -1,48 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🦠 Virus Survival Game</title>
-    <link rel="stylesheet" href="style.css"> <!-- Link to CSS file -->
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <h1><b>🕹️ Virus Survival Game</b></h1>
 
-    <!-- Game Info Panel -->
-    <b>
+<body>
+
+<!-- START SCREEN -->
+<div id="startScreen">
+    <h1>🦠 Virus Survival Game</h1>
+    <p>Escape the virus infected grid and reach the exit safely.</p>
+    <button id="startBtn">▶ Start Game</button>
+</div>
+
+<!-- GAME TITLE -->
+<h1>🕹️ Virus Survival Game</h1>
+
+<!-- COMBINED INFO CARD: HOW TO PLAY + LEGEND -->
+<div id="gameInfoCard" class="card">
+    <h3>How to Play & Game Legend</h3>
+    <ul>
+        <li>🧍 Reach the 🏁 exit safely.</li>
+        <li>💣 Bomb / ☠️ Virus = Game Over.</li>
+        <li>⚠ Trap sends you back to start.</li>
+        <li>🛡 Shield protects you for 3 turns.</li>
+        <li>⚡ Double Move lets you move twice.</li>
+        <li>⭐ Energy gives extra points.</li>
+        <li>👾 Watch out for the Enemy – getting caught ends the game.</li>
+        <li>Use <b>W / A / S / D</b> or <b>Arrow Keys</b> on desktop.</li>
+        <li>Use <b>Swipe or Buttons</b> on mobile.</li>
+    </ul>
+
+    <h4>Legend</h4>
+    <div class="legendGrid">
+        <span>🧍 Player</span>
+        <span>💣 Bomb</span>
+        <span>☠️ Virus Trap</span>
+        <span>⚠ Trap</span>
+        <span>🏁 Exit</span>
+        <span>🛡 Shield</span>
+        <span>⚡ Double Move</span>
+        <span>⭐ Energy</span>
+        <span>👾 Enemy</span>
+    </div>
+</div>
+
+<!-- INFO PANEL -->
+<div id="gameInfoCard" class="card">
     <div id="info">
         <p>Turn: <span id="turn">0</span></p>
         <p>Shield Turns: <span id="shield">0</span></p>
         <p>Double Move: <span id="doubleMove">OFF</span></p>
         <p>Score: <span id="score">0</span></p>
+        <p>Best Score: <span id="bestScore">0</span></p>
         <p>Timer: <span id="timer">0</span> seconds</p>
         <p>Controls: W/A/S/D or Arrow Keys</p>
-        <label>
-            <input type="checkbox" id="hintCheckbox"> Show Hint Path
-        </label>
+        <label><input type="checkbox" id="hintCheckbox"> Show AI Hint Path</label>
+</div>
+</div>
+
+<!-- GAME BOARD -->
+<div id="board"></div>
+
+<!-- MESSAGE AREA -->
+<div id="message"></div>
+
+<!-- GAME OVER POPUP -->
+<div id="gameOverPanel" class="hidden">
+    <div id="gameOverBox">
+        <h2 id="gameOverEmoji"></h2>
+        <p id="gameOverText"></p>
+        <button id="restartBtn">🔄 Restart</button>
+        <button id="exitBtn">❌ Exit</button>
     </div>
-    </b>
+</div>
 
-    <!-- Game Board -->
-    <div id="board"></div>
-
-    <!-- Inline Message Panel -->
-
-    <div id="message"></div>
-
-    <!-- Game Over Panel (hidden initially) -->
-    <div id="gameOverPanel" class="hidden">
-        <div id="gameOverBox">
-            <h2 id="gameOverEmoji"></h2>
-            <p id="gameOverText"></p>
-            <button id="restartBtn">🔄 Restart</button>
-            <button id="exitBtn">❌ Exit</button>
-        </div>
+<!-- MOBILE CONTROLS -->
+<div id="mobileControls">
+    <button onclick="movePlayer(-1,0)">⬆️</button>
+    <div>
+        <button onclick="movePlayer(0,-1)">⬅️</button>
+        <button onclick="movePlayer(1,0)">⬇️</button>
+        <button onclick="movePlayer(0,1)">➡️</button>
     </div>
+</div>
 
-    <!-- JS Script -->
-    <script src="script.js"></script>
+<!-- MAIN GAME SCRIPT -->
+<script src="script.js"></script>
+
+<script>
+/* ---------------- START SCREEN ---------------- */
+const startBtn = document.getElementById("startBtn");
+startBtn.addEventListener("click", function(){
+    document.getElementById("startScreen").style.display = "none";
+});
+</script>
+
 </body>
 </html>
-

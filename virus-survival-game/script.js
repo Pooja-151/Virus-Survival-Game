@@ -1,371 +1,457 @@
-// ==== Configuration ====
-// We set ROWS x COLS to 20 x 30 as requested.
-const ROWS = 20;    // number of rows (vertically)
-const COLS = 30;    // number of columns (horizontally)
+// ==================== CONFIGURATION ====================
 
-// Counts derived from percentages (on 600 cells)
-const WALLS = 35;                // static-ish walls scattered
-const BOMBS = Math.round(0.10 * ROWS * COLS);  // 10% bombs => ~60
-const TRAPS = Math.round(0.05 * ROWS * COLS);  // 5% traps => ~30
-const VTRAPS = Math.round(0.07 * ROWS * COLS); // 7% virus => ~42
+// Grid dimensions
+const ROWS = 20;
+const COLS = 30;
 
-// powerups: keep tiny numbers (1-2 each)
-const SHIELD_COUNT = 1;   // 🛡
-const DOUBLE_COUNT = 1;   // ⚡
-const ENERGY_COUNT = 1;   // ⭐
+// Hazard counts
+const WALLS = 35;
+const BOMBS = Math.round(0.1 * ROWS * COLS);
+const TRAPS = Math.round(0.05 * ROWS * COLS);
+const VTRAPS = Math.round(0.07 * ROWS * COLS);
 
-// ==== Game State ====
-let grid = [];                // 2D array grid[r][c] holds strings like 'empty','player','bomb',...
-let turn = 0;                 // turn counter
-let score = 0;                // score tally
-let playerPos = {r:0, c:0};   // player position
-let shieldTurns = 0;          // shield remaining turns
-let doubleMove = false;       // double-move active
-let timer = 0;                // seconds
-let timerInterval = null;     // interval id
-let gameOverFlag = false;     // true when game has ended (win/lose) to stop moves
+// Power-up counts
+const SHIELD_COUNT = 1;
+const DOUBLE_COUNT = 1;
+const ENERGY_COUNT = 1;
 
-// ==== Sounds  ====
-const moveSound = new Audio('sounds/move.mp3');
-const hazardSound = new Audio('sounds/hazard.mp3');
+// Enemy AI parameters
+let enemyPos = { r: 0, c: 0 }; // Initial enemy position (spawn later randomly)
+let visibilityRadius = 3;       // Reserved for future fog-of-war implementation
+
+// ==================== GAME STATE ====================
+let grid = [];                  // 2D grid representing the game board
+let playerPos = { r: 0, c: 0 }; // Player coordinates
+let turn = 0;                    // Turn counter
+let score = 0;                   // Player score
+let shieldTurns = 0;             // Shield duration in turns
+let doubleMove = false;          // Double-move power-up active
+let timer = 0;                   // Elapsed game time in seconds
+let timerInterval = null;        // Interval ID for timer
+let gameOverFlag = false;        // Prevents further actions after game over
+
+// ==================== SOUNDS ====================
+const moveSound    = new Audio('sounds/move.mp3');
+const hazardSound  = new Audio('sounds/hazard.mp3');
 const powerupSound = new Audio('sounds/powerup.mp3');
-const winSound = new Audio('sounds/win.mp3');
-const loseSound = new Audio('sounds/lose.mp3');
+const winSound     = new Audio('sounds/win.mp3');
+const loseSound    = new Audio('sounds/lose.mp3');
 
-// ==== Utility: display inline messages ====
-// Using innerHTML because we sometimes show buttons inside the message.
-function showMessage(msg, color="black"){
-    const messageDiv = document.getElementById('message');
-    messageDiv.innerHTML = msg;
-    messageDiv.style.color = color;
+// ==================== UTILITY FUNCTIONS ====================
+
+/**
+ * Display a message to the player with optional color
+ * @param {string} msg - Message text
+ * @param {string} color - CSS color (default: black)
+ */
+function showMessage(msg, color = "black") {
+    const msgDiv = document.getElementById('message');
+    msgDiv.innerHTML = msg;
+    msgDiv.style.color = color;
 }
 
-// ==== Initialize grid with 'empty' ====
-for(let r=0; r<ROWS; r++){
-    grid[r] = [];
-    for(let c=0; c<COLS; c++){
-        grid[r][c] = 'empty'; // default
-    }
-}
-
-// ==== Place player (top-left) and exit (bottom-right) ====
-grid[0][0] = 'player';
-playerPos = {r:0, c:0};
-grid[ROWS-1][COLS-1] = 'exit';
-
-// ==== Helper: getRandomEmptyCell ====
-function getRandomEmptyCell(){
-    while(true){
+/**
+ * Returns a random empty cell in the grid
+ */
+function getRandomEmptyCell() {
+    while (true) {
         const r = Math.floor(Math.random() * ROWS);
         const c = Math.floor(Math.random() * COLS);
-        if(grid[r][c] === 'empty') return {r, c};
+        if (grid[r][c] === 'empty' && !(r === 0 && c === 0)) return { r, c };
     }
 }
 
-// ==== Place objects utility ====
-function placeObjects(type, count){
-    for(let i=0; i<count; i++){
+// ==================== INITIALIZE GRID ====================
+
+// Initialize empty grid
+for (let r = 0; r < ROWS; r++) {
+    grid[r] = [];
+    for (let c = 0; c < COLS; c++) {
+        grid[r][c] = 'empty';
+    }
+}
+
+// Place player and exit
+grid[0][0] = 'player';
+playerPos = { r: 0, c: 0 };
+grid[ROWS - 1][COLS - 1] = 'exit';
+
+// Spawn enemy at random empty cell
+enemyPos = getRandomEmptyCell();
+
+// ==================== PLACE OBJECTS ====================
+
+/**
+ * Place objects of a given type randomly on the grid
+ * @param {string} type - Type of object ('wall', 'bomb', etc.)
+ * @param {number} count - Number of objects to place
+ */
+function placeObjects(type, count) {
+    for (let i = 0; i < count; i++) {
         const cell = getRandomEmptyCell();
         grid[cell.r][cell.c] = type;
     }
 }
 
-// initial placement
+// Place hazards
 placeObjects('wall', WALLS);
 placeObjects('bomb', BOMBS);
 placeObjects('trap', TRAPS);
 placeObjects('vtrap', VTRAPS);
 
-// place powerups individually
-for(let i=0;i<SHIELD_COUNT;i++){
-    const c = getRandomEmptyCell(); grid[c.r][c.c] = 'S';
-}
-for(let i=0;i<DOUBLE_COUNT;i++){
-    const c = getRandomEmptyCell(); grid[c.r][c.c] = 'D';
-}
-for(let i=0;i<ENERGY_COUNT;i++){
-    const c = getRandomEmptyCell(); grid[c.r][c.c] = '*';
-}
+// Place power-ups
+for (let i = 0; i < SHIELD_COUNT; i++) grid[getRandomEmptyCell().r][getRandomEmptyCell().c] = 'S';
+for (let i = 0; i < DOUBLE_COUNT; i++) grid[getRandomEmptyCell().r][getRandomEmptyCell().c] = 'D';
+for (let i = 0; i < ENERGY_COUNT; i++) grid[getRandomEmptyCell().r][getRandomEmptyCell().c] = '*';
 
-// ==== Timer ====
-function startTimer(){
-    timerInterval = setInterval(()=>{
+// ==================== TIMER ====================
+
+/**
+ * Start the game timer
+ */
+function startTimer() {
+    timerInterval = setInterval(() => {
         timer++;
         document.getElementById('timer').innerText = timer;
     }, 1000);
 }
 
-// ==== BFS-based hint path ====
-function getHintPath(){
-    const visited = Array.from({length:ROWS}, ()=> Array(COLS).fill(false));
-    const prev = Array.from({length:ROWS}, ()=> Array(COLS).fill(null));
-    const q = [];
+// ==================== BFS HINT PATH ====================
 
-    q.push({r: playerPos.r, c: playerPos.c});
+/**
+ * Find the shortest safe path from player to exit using BFS
+ * Returns an array of cell coordinates
+ */
+function getHintPath() {
+    const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+    const prev = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    const queue = [{ r: playerPos.r, c: playerPos.c }];
     visited[playerPos.r][playerPos.c] = true;
 
-    let found = false;
     let exitPos = null;
 
-    while(q.length > 0){
-        const cur = q.shift();
-        const r = cur.r, c = cur.c;
-
-        if(grid[r][c] === 'exit'){
-            found = true;
-            exitPos = {r,c};
+    while (queue.length) {
+        const { r, c } = queue.shift();
+        if (grid[r][c] === 'exit') {
+            exitPos = { r, c };
             break;
         }
 
-        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
-        for(const [dr,dc] of dirs){
-            const nr = r + dr;
-            const nc = c + dc;
-            if(nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
-            if(visited[nr][nc]) continue;
-
+        [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(([dr, dc]) => {
+            const nr = r + dr, nc = c + dc;
+            if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) return;
+            if (visited[nr][nc]) return;
             const cellType = grid[nr][nc];
-            if(cellType === 'wall' || cellType === 'bomb' || cellType === 'vtrap') continue;
-
+            if (cellType === 'wall' || cellType === 'bomb' || cellType === 'vtrap') return;
             visited[nr][nc] = true;
-            prev[nr][nc] = {r,c};
-            q.push({r: nr, c: nc});
-        }
+            prev[nr][nc] = { r, c };
+            queue.push({ r: nr, c: nc });
+        });
     }
 
-    if(!found) return [];
+    if (!exitPos) return [];
 
     const path = [];
     let cur = exitPos;
-    while(cur && !(cur.r === playerPos.r && cur.c === playerPos.c)){
+    while (cur && !(cur.r === playerPos.r && cur.c === playerPos.c)) {
         path.push(cur);
         cur = prev[cur.r][cur.c];
     }
+
     return path.reverse();
 }
 
-// ==== Complex hazard shuffle ====
-function shuffleHazardsComplex(){
-    const fraction = 0.30;
+// ==================== SHUFFLE HAZARDS ====================
 
-    function collectPositions(type){
-        const list = [];
-        for(let r=0;r<ROWS;r++){
-            for(let c=0;c<COLS;c++){
-                if(grid[r][c] === type) list.push({r,c});
-            }
-        }
-        return list;
+/**
+ * Randomly shuffle a fraction of hazards on the grid
+ */
+function shuffleHazardsComplex() {
+    const fraction = 0.3;
+
+    function collect(type) {
+        const arr = [];
+        for (let r = 0; r < ROWS; r++)
+            for (let c = 0; c < COLS; c++)
+                if (grid[r][c] === type) arr.push({ r, c });
+        return arr;
     }
 
-    const types = ['bomb','trap','vtrap'];
+    ['bomb', 'trap', 'vtrap'].forEach(type => {
+        const positions = collect(type);
+        const moves = Math.max(1, Math.floor(positions.length * fraction));
 
-    types.forEach(type => {
-        const positions = collectPositions(type);
-        const moveCount = Math.max(1, Math.floor(positions.length * fraction));
-        for(let i = positions.length - 1; i > 0; i--){
-            const j = Math.floor(Math.random() * (i+1));
+        // Shuffle positions
+        for (let i = positions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
             [positions[i], positions[j]] = [positions[j], positions[i]];
         }
-        for(let i=0;i<moveCount && i<positions.length;i++){
-            const pos = positions[i];
-            grid[pos.r][pos.c] = 'empty';
-            const newCell = getRandomEmptyCell();
-            grid[newCell.r][newCell.c] = type;
+
+        // Move fraction of hazards to new empty cells
+        for (let i = 0; i < moves && i < positions.length; i++) {
+            const oldPos = positions[i];
+            grid[oldPos.r][oldPos.c] = 'empty';
+            const newPos = getRandomEmptyCell();
+            grid[newPos.r][newPos.c] = type;
         }
     });
-
-    if(Math.random() < 0.12){
-        const add = Math.random() < 0.6 ? 1 : 2;
-        for(let i=0;i<add;i++){
-            const c = getRandomEmptyCell();
-            grid[c.r][c.c] = 'wall';
-        }
-    }
 }
 
-// ==== Render board ====
-function renderBoard(){
-    const boardDiv = document.getElementById('board');
-    boardDiv.innerHTML = '';
+// ==================== RENDER BOARD ====================
 
-    let hintPath = [];
-    const hintOn = document.getElementById('hintCheckbox') && document.getElementById('hintCheckbox').checked;
-    if(hintOn){
-        hintPath = getHintPath();
-    }
+/**
+ * Render the game board and UI elements
+ */
+function renderBoard() {
+    const board = document.getElementById('board');
+    board.innerHTML = '';
 
-    for(let r=0;r<ROWS;r++){
-        for(let c=0;c<COLS;c++){
+    const hint = document.getElementById('hintCheckbox')?.checked ? getHintPath() : [];
+
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
             const cellDiv = document.createElement('div');
             cellDiv.classList.add('cell');
-            const cell = grid[r][c];
 
-            if(hintPath.some(p => p.r === r && p.c === c)){
-                cellDiv.classList.add('hint');
+            // Show hint path
+            if (hint.some(p => p.r === r && p.c === c)) cellDiv.classList.add('hint');
+
+            // Render enemy
+            if (enemyPos.r === r && enemyPos.c === c) {
+                cellDiv.classList.add('enemy');
+                cellDiv.innerText = '👾';
+            } else {
+                const t = grid[r][c];
+                const typeClass = t === 'player' ? 'player'
+                    : t === 'wall' ? 'wall'
+                    : t === 'bomb' ? 'bomb'
+                    : t === 'trap' ? 'trap'
+                    : t === 'vtrap' ? 'vtrap'
+                    : t === 'exit' ? 'exit'
+                    : t === 'S' ? 'shield'
+                    : t === 'D' ? 'double'
+                    : t === '*' ? 'energy'
+                    : 'empty';
+
+                cellDiv.classList.add(typeClass);
+
+                if (t === 'player') cellDiv.innerText = '🧍';
+                else if (t === 'bomb') cellDiv.innerText = '💣';
+                else if (t === 'trap') cellDiv.innerText = '⚠️';
+                else if (t === 'vtrap') cellDiv.innerText = '☠️';
+                else if (t === 'exit') cellDiv.innerText = '🏁';
+                else if (t === 'S') cellDiv.innerText = '🛡️';
+                else if (t === 'D') cellDiv.innerText = '⚡';
+                else if (t === '*') cellDiv.innerText = '⭐';
+                else cellDiv.innerText = '';
             }
 
-            const typeClass = (cell === 'player') ? 'player' :
-                              (cell === 'wall') ? 'wall' :
-                              (cell === 'bomb') ? 'bomb' :
-                              (cell === 'trap') ? 'trap' :
-                              (cell === 'vtrap') ? 'vtrap' :
-                              (cell === 'exit') ? 'exit' :
-                              (cell === 'S') ? 'shield' :
-                              (cell === 'D') ? 'double' :
-                              (cell === '*') ? 'energy' : 'empty';
-            cellDiv.classList.add(typeClass);
-
-            if(cell === 'player') cellDiv.innerText = '🧍';
-            else if(cell === 'bomb') cellDiv.innerText = '💣';
-            else if(cell === 'trap') cellDiv.innerText = '⚠️';
-            else if(cell === 'vtrap') cellDiv.innerText = '☠️';
-            else if(cell === 'exit') cellDiv.innerText = '🏁';
-            else if(cell === 'S') cellDiv.innerText = '🛡️';
-            else if(cell === 'D') cellDiv.innerText = '⚡';
-            else if(cell === '*') cellDiv.innerText = '⭐';
-            else {
-                if(hintPath.some(p => p.r === r && p.c === c)){
-                    cellDiv.innerText = '·';
-                } else {
-                    cellDiv.innerText = '';
-                }
-            }
-
-            boardDiv.appendChild(cellDiv);
+            board.appendChild(cellDiv);
         }
     }
 
+    // Update UI stats
     document.getElementById('turn').innerText = turn;
     document.getElementById('shield').innerText = shieldTurns;
     document.getElementById('doubleMove').innerText = doubleMove ? 'ON' : 'OFF';
     document.getElementById('score').innerText = score;
 }
 
-// ==== Game Over Popup (NEW) ====
-function triggerGameOver(emoji, text, win=false){
+// ==================== GAME OVER ====================
+
+/**
+ * Trigger game over state
+ * @param {string} emoji - Emoji to display
+ * @param {string} text - Message to display
+ * @param {boolean} win - Whether player won
+ */
+function triggerGameOver(emoji, text, win = false) {
     gameOverFlag = true;
     clearInterval(timerInterval);
 
-    const panel = document.getElementById('gameOverPanel');
-    const box   = document.getElementById('gameOverBox');
-    const emojiBox = document.getElementById('gameOverEmoji');
-    const textBox  = document.getElementById('gameOverText');
+    document.getElementById('gameOverEmoji').innerText = emoji;
+    document.getElementById('gameOverText').innerText = text;
 
-    emojiBox.innerText = emoji;
-    textBox.innerText  = text;
-
-    box.classList.remove('winBox','loseBox');
+    const box = document.getElementById('gameOverBox');
+    box.classList.remove('winBox', 'loseBox');
     box.classList.add(win ? 'winBox' : 'loseBox');
 
-    panel.classList.remove('hidden');
+    document.getElementById('gameOverPanel').classList.remove('hidden');
+    updateBestScore(score);
 }
 
-// ==== Player move function ====
-function movePlayer(dr, dc){
-    if(gameOverFlag) return;
+// ==================== PLAYER MOVEMENT ====================
+
+/**
+ * Move player by delta row/column
+ * @param {number} dr - Delta row
+ * @param {number} dc - Delta column
+ */
+function movePlayer(dr, dc) {
+    if (gameOverFlag) return;
 
     const newR = playerPos.r + dr;
     const newC = playerPos.c + dc;
 
-    if(newR < 0 || newR >= ROWS || newC < 0 || newC >= COLS) return;
+    // Boundary check
+    if (newR < 0 || newR >= ROWS || newC < 0 || newC >= COLS) return;
 
     const target = grid[newR][newC];
-    if(target === 'wall') return;
 
+    // Cannot walk through walls
+    if (target === 'wall') return;
+
+    // Clear previous player cell
     grid[playerPos.r][playerPos.c] = 'empty';
-    playerPos = {r: newR, c: newC};
-    try { moveSound.play(); } catch(e){}
+    playerPos = { r: newR, c: newC };
 
-    if(target === 'bomb' || target === 'vtrap'){
-        if(shieldTurns > 0){
+    // **Fix player invisibility:** set new cell as 'player'
+    grid[playerPos.r][playerPos.c] = 'player';
+
+    try { moveSound.play(); } catch (e) {}
+
+    // Handle hazards and power-ups
+    if (target === 'bomb' || target === 'vtrap') {
+        if (shieldTurns > 0) {
             shieldTurns--;
-            showMessage("🛡️ Shield absorbed the hazard!", "teal");
+            showMessage("🛡 Shield absorbed hazard", "teal");
         } else {
-            try { hazardSound.play(); } catch(e){}
-            try { loseSound.play(); } catch(e){}
-            triggerGameOver("💥", "You hit a hazard! Game Over");
-            grid[playerPos.r][playerPos.c] = 'player';
+            try { hazardSound.play(); loseSound.play(); } catch (e) {}
+            triggerGameOver("💥", "You hit a hazard!");
             renderBoard();
             return;
         }
-    } else if(target === 'trap'){
+    } else if (target === 'trap') {
         showMessage("⚠ Trap! Back to start.", "orange");
-        playerPos = {r:0, c:0};
-    } else if(target === 'S'){
+        playerPos = { r: 0, c: 0 };
+        grid[playerPos.r][playerPos.c] = 'player';
+    } else if (target === 'S') {
         shieldTurns = 3;
-        showMessage("🛡️ Shield collected! 3 turns protection.", "teal");
+        showMessage("🛡 Shield collected! 3 turns", "teal");
         score += 10;
-        try { powerupSound.play(); } catch(e){}
-    } else if(target === 'D'){
+        try { powerupSound.play(); } catch (e) {}
+    } else if (target === 'D') {
         doubleMove = true;
-        showMessage("⚡ Double Move collected! Move twice.", "orange");
+        showMessage("⚡ Double Move collected!", "orange");
         score += 10;
-        try { powerupSound.play(); } catch(e){}
-    } else if(target === '*'){
+        try { powerupSound.play(); } catch (e) {}
+    } else if (target === '*') {
         showMessage("⭐ Energy collected!", "goldenrod");
         score += 5;
-        try { powerupSound.play(); } catch(e){}
-    } else if(target === 'exit'){
-        try { winSound.play(); } catch(e){}
+        try { powerupSound.play(); } catch (e) {}
+    } else if (target === 'exit') {
+        try { winSound.play(); } catch (e) {}
         score += 50;
-        triggerGameOver("🎉", "You reached the Exit! You Win!", true);
+        triggerGameOver("🎉", "You Win!", true);
         return;
     }
 
-    grid[playerPos.r][playerPos.c] = 'player';
+    // Update turn and score
     turn++;
     score++;
 
+    // Shuffle hazards randomly
     shuffleHazardsComplex();
 
-    if(Math.random() < 0.08){
-        if(Math.random() < 0.5){
-            const c = getRandomEmptyCell(); grid[c.r][c.c] = '*';
-        } else {
-            const c = getRandomEmptyCell(); grid[c.r][c.c] = 'S';
-        }
+    // Randomly spawn extra power-ups
+    if (Math.random() < 0.08) {
+        const c = getRandomEmptyCell();
+        grid[c.r][c.c] = Math.random() < 0.5 ? '*' : 'S';
     }
 
+    moveEnemy();
     renderBoard();
 }
 
-// ==== Restart & Exit functions ====
-function restartGame(){
-    location.reload();
-}
-function exitGame(){
-    gameOverFlag = true;
-    clearInterval(timerInterval);
-    showMessage("👋 You chose to exit. Refresh the page to play again.", "blue");
+// ==================== ENEMY AI ====================
+
+/**
+ * Move enemy towards player with some randomness
+ */
+function moveEnemy() {
+    if (gameOverFlag) return;
+
+    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    const dr = playerPos.r - enemyPos.r;
+    const dc = playerPos.c - enemyPos.c;
+
+    // 60% chance to move towards player
+    if (Math.random() < 0.6) {
+        if (Math.abs(dr) > Math.abs(dc)) enemyPos.r += Math.sign(dr);
+        else enemyPos.c += Math.sign(dc);
+    } else {
+        // Random movement
+        const [r, c] = dirs[Math.floor(Math.random() * dirs.length)];
+        enemyPos.r = Math.max(0, Math.min(ROWS - 1, enemyPos.r + r));
+        enemyPos.c = Math.max(0, Math.min(COLS - 1, enemyPos.c + c));
+    }
+
+    // Check collision with player
+    if (enemyPos.r === playerPos.r && enemyPos.c === playerPos.c) triggerGameOver("☠️", "Enemy caught you!");
 }
 
-// ==== Key listener ====
-function handleKey(e){
-    if(gameOverFlag) return;
+// ==================== KEYBOARD CONTROLS ====================
+document.addEventListener('keydown', function (e) {
+    if (gameOverFlag) return;
     let moved = false;
-    if(e.key === 'w' || e.key === 'ArrowUp'){ movePlayer(-1, 0); moved = true; }
-    else if(e.key === 's' || e.key === 'ArrowDown'){ movePlayer(1, 0); moved = true; }
-    else if(e.key === 'a' || e.key === 'ArrowLeft'){ movePlayer(0, -1); moved = true; }
-    else if(e.key === 'd' || e.key === 'ArrowRight'){ movePlayer(0, 1); moved = true; }
 
-    if(doubleMove && moved){
+    if (e.key === 'w' || e.key === 'ArrowUp') { movePlayer(-1, 0); moved = true; }
+    else if (e.key === 's' || e.key === 'ArrowDown') { movePlayer(1, 0); moved = true; }
+    else if (e.key === 'a' || e.key === 'ArrowLeft') { movePlayer(0, -1); moved = true; }
+    else if (e.key === 'd' || e.key === 'ArrowRight') { movePlayer(0, 1); moved = true; }
+
+    if (doubleMove && moved) {
         doubleMove = false;
         showMessage("Double Move: move again!", "orange");
     }
-}
-document.addEventListener('keydown', handleKey);
+});
 
-// hint toggle
-const hintCheckbox = document.getElementById('hintCheckbox');
-if(hintCheckbox) hintCheckbox.addEventListener('change', ()=> renderBoard());
+// ==================== HINT TOGGLE ====================
+document.getElementById('hintCheckbox')?.addEventListener('change', () => renderBoard());
 
-// ==== Game Over buttons ====
-document.getElementById('restartBtn').onclick = ()=> location.reload();
-document.getElementById('exitBtn').onclick = ()=>{
+// ==================== GAME OVER BUTTONS ====================
+document.getElementById('restartBtn').onclick = () => location.reload();
+document.getElementById('exitBtn').onclick = () => {
+    gameOverFlag = true;
+    clearInterval(timerInterval);
     document.getElementById('gameOverText').innerText = "👋 Thanks for playing!";
 };
 
-// ==== Initial render ====
+// ==================== MOBILE SWIPE CONTROLS ====================
+let touchStartX = 0, touchStartY = 0;
+document.addEventListener("touchstart", e => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+});
+document.addEventListener("touchend", e => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 30) movePlayer(0, 1);
+        else if (dx < -30) movePlayer(0, -1);
+    } else {
+        if (dy > 30) movePlayer(1, 0);
+        else if (dy < -30) movePlayer(-1, 0);
+    }
+});
+
+// ==================== BEST SCORE SYSTEM ====================
+let bestScore = localStorage.getItem("bestScore") || 0;
+document.getElementById("bestScore").innerText = bestScore;
+
+/**
+ * Update best score if current score exceeds previous
+ * @param {number} s - Current score
+ */
+function updateBestScore(s) {
+    if (s > bestScore) {
+        bestScore = s;
+        localStorage.setItem("bestScore", bestScore);
+        document.getElementById("bestScore").innerText = bestScore;
+    }
+}
+
+// ==================== INITIALIZE GAME ====================
 renderBoard();
 startTimer();
